@@ -92,3 +92,19 @@ Charge step, 24h wait (instant locally), receipt step, result returned. Time fro
 **Time lost:** ~5 min.
 **Would have fixed it:** `connect` run inside an existing directory should ask "link this directory or create a subfolder?" (the help text says "link a directory"), and print the resulting path on its own line. Moved `.volcano/`, `AGENTS.md` and `volcano/cloud.env` to the root; deleted the subfolder.
 
+## 2026-11-06 · Milestone: approval wait works end to end (local)
+
+`send-outbound` started 19:53:18, suspended on `waitForApproval`, showed in `volcano durable approvals list` as pending with a 24h expiry, approved from the CLI with a comment at 19:54:27, resumed and returned `{ sent: true, by, comment, messageId }` at 19:54:28. 1m10s total, ~1m09s of it waiting.
+**Good:** `approvals approve` echoes the full request (title, description, details JSON, decider, time, comment) and says "the workflow resumes with the decision." Best output in the CLI so far.
+**Small:** locally the decider is a placeholder identity (`clearwater@volcano.dev`). Fine, but the guide should say so, or a first-timer wonders who that is.
+**Small:** `approvals list` shows the Execution as the Name UUID, while `executions get` wants the ID UUID. Same ID/Name confusion as before, now in two commands.
+
+## 2026-11-06 · Deny path (local)
+Second execution denied from the CLI with a comment. Execution finished `succeeded` with `{ sent: false, reason: "denied", comment }`. Denial is a result, not an error, exactly as the approvals page says. 4m15s, all of it waiting. Acceptance tests 1 to 4 of the recipe now pass by hand.
+
+## 2026-11-06 · Expiry path (local)
+Set `timeout: '10s'`, started one, did nothing. Finished `succeeded` after 11s with `{ sent: false, reason: "expired", comment: null }`. Confirms approval timeouts run in real time locally (the docs say so; good to see). Set back to 24h. All three decision outcomes verified: approved, denied, expired.
+
+## Time check
+From `npm install -g @volcano.dev/cli` to all three outcomes verified locally: about 1h 15m, of which roughly 35 min was spent on things the docs or CLI could have prevented (signup handoff, config format, missing SDK install, nested connect folder).
+
