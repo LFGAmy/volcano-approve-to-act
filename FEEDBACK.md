@@ -108,3 +108,21 @@ Set `timeout: '10s'`, started one, did nothing. Finished `succeeded` after 11s w
 ## Time check
 From `npm install -g @volcano.dev/cli` to all three outcomes verified locally: about 1h 15m, of which roughly 35 min was spent on things the docs or CLI could have prevented (signup handoff, config format, missing SDK install, nested connect folder).
 
+## 2026-11-06 · Cloud deploy
+
+**Good:** `volcano cloud durable deploy --all` worked first try with the same files as local. Provisioning took ~2.5 min, then active in 8 regions. Execution started in us-west-2 (nearest). Defaults: 366-day execution timeout, 30-day retention, so the guide's `execution_timeout_seconds` / `retention_days` fields are not needed for a first function.
+**Small:** `approvals list --status pending` run ~5s after `start` returned "No pending approvals"; ~2 min later the approval showed with "Requested 2m ago". So the approval existed, it just was not listable yet. A note ("approvals may take a few seconds to appear") or a retry hint would stop a first-timer from thinking the wait was skipped.
+
+## 2026-11-06 · Dashboard, Approvals page
+
+**Good:** "1 approval waiting" badge in the header on every page; Approvals page shows request/pending/approved/denied/expired/cancelled counts, approval rate, median time to decision, a pending table with title, workflow, execution, requested, expires, decided by. Everything a reviewer needs on one screen. This is the screenshot for the recipe.
+**Bug:** "Outcomes per day (UTC)" y-axis ticks read `.05, 0.7, .35, 0` for a count of 1. Ticks are not evenly spaced and are fractional for an integer count. Should be 0, 1 (or 0, 1, 2) for small counts.
+**Small:** the Execution column links the Name UUID (orange), consistent with the CLI's `approvals list`, but still the "wrong" one for `executions get`. Pick one identifier to show humans everywhere.
+
+## 2026-11-06 · Milestone: approved in the cloud with real identity
+Cloud execution started 20:10:07, approval pending, approved from the CLI at 20:14:33 as collab@lfgamy.com, execution succeeded 20:14:34 with `{ sent: true, by: "collab@lfgamy.com", comment, messageId }`. 4m27s, ~4m26s waiting.
+**Small:** timestamps around the approval disagree by a few seconds: execution Started 20:10:07, approval Requested 20:10:16, Expires 20:10:14 next day (2s before Requested + 24h). Probably different clocks or rounding; harmless, but a reviewer comparing them will notice.
+
+## Time check 2
+Install to cloud-approved: ~2h 05m wall clock, including dashboard screenshots and this log. Pure build time without the four docs/CLI detours: ~1h 15m.
+
