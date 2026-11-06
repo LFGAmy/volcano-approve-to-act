@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { getVolcano } from '@/lib/volcano';
+import LavaHero from '@/components/LavaHero';
 import { readExecution, type Execution, type SendOutboundResult } from '@/lib/execution';
 
 const FUNCTION_NAME = 'send-outbound';
@@ -157,6 +158,7 @@ export default function AgentInbox() {
   return (
     <main className="page">
       <header className="header">
+        <LavaHero />
         <h1>Agent inbox</h1>
         <p className="small" role="status">
           {userId ? `signed in as ${userId}` : authError ? 'not signed in' : 'signing in…'}
