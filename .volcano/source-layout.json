@@ -1,0 +1,1 @@
+{ "version": 1, "frontends": [{ "name": "agent-inbox", "workspace": "frontend", "app_root": "" }] }

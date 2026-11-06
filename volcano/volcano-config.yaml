@@ -1,6 +1,23 @@
 version: 1
+
+# The Agent inbox page signs visitors in anonymously. Off by default; this
+# turns it on. Omitted auth fields keep their current values.
+auth:
+  signup:
+    enable_anonymous_signins: true
+
 functions:
   - name: orders
     kind: durable
   - name: send-outbound
     kind: durable
+    visibility: authenticated   # signed-in users, anonymous included, may start it
+
+# Must exist before this applies. `volcano deploy` creates it from
+# .volcano/source-layout.json first, then applies this entry.
+frontends:
+  - name: agent-inbox
+    variable_scope: scoped
+    variables:
+      - NEXT_PUBLIC_VOLCANO_API_URL
+      - NEXT_PUBLIC_VOLCANO_ANON_KEY

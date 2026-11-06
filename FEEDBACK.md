@@ -126,3 +126,28 @@ Cloud execution started 20:10:07, approval pending, approved from the CLI at 20:
 ## Time check 2
 Install to cloud-approved: ~2h 05m wall clock, including dashboard screenshots and this log. Pure build time without the four docs/CLI detours: ~1h 15m.
 
+
+## 2026-11-06 · Frontend: `durable.getFromApplication` is in the docs, not in the SDK
+
+**Ran:** built the Agent inbox page from docs.volcano.dev/sdk/js/durable-functions.md ("Reading and stopping from the application"), which shows `volcano.durable.getFromApplication(name, id, { clientToken })` and `error.retryAfter` for throttled reads.
+**Expected:** the method exists in `@volcano.dev/sdk@2.2.0`, the newest release on npm (published 2026-10-28).
+**Got:** `typeof volcano.durable.getFromApplication` is `undefined`. Not in the typings, not in the compiled JS, not in the `nightly` tag either (which is older than 2.2.0, built 2026-06-03). The 2.2.0 OpenAPI types still describe the application path as POST-only: "Reading a result or stopping an execution requires the project owner's token." The `volcano-durable` skill (plugin 0.2.49) sides with the SDK, not the docs: reads are owner-scoped, "poll from your own backend or with the CLI."
+**Verified:** the REST read the platform docs describe does work on the local server (CLI 0.71.0): `GET /durable-functions/send-outbound/executions/<id>` with `Authorization: Bearer <user access token>` and `X-Volcano-Client-Token` answered 200 with the execution. The server shipped before the SDK did.
+**Why it matters:** docs, SDK, and skills disagree three ways on the one call a browser needs, reading the execution it started. Following the docs produces `is not a function` in the browser.
+**Workaround:** the page feature-detects `getFromApplication` and otherwise sends the documented REST read with the same headers, mapping `Retry-After` to `error.retryAfter`. The fallback goes when the SDK ships the method.
+**Time lost:** ~25 min confirming it was the SDK and not me.
+**Would have fixed it:** a "since SDK x.y" marker next to `getFromApplication` in the docs, and the skill and SDK release matching the docs page.
+
+## 2026-11-06 · Anonymous sign-in is off by default and the durable docs do not say where to turn it on
+
+**Ran:** `volcano.auth.signInAnonymously()` against the local server.
+**Got:** `403 anonymous signins are disabled for this project`. Same on the cloud project: `volcano cloud config pull` shows `auth.signup.enable_anonymous_signins: false`.
+**Fix:** `auth.signup.enable_anonymous_signins: true` in `volcano/volcano-config.yaml`, applied by `volcano deploy` and `volcano cloud deploy`. Found the key by pulling the config. The anonymous-users page only shows the raw `PUT /auth/config` JSON.
+**Small:** the SDK docs call the method `signInAnonymously` and mark `signUpAnonymous` as a compatibility alias (the typings say deprecated). The `volcano-auth` skill still teaches `signUpAnonymous`.
+**Would have fixed it:** the anonymous-users page showing the manifest key next to the JSON, and the durable docs' "signed-in users include anonymous sign-ins" sentence linking to it.
+
+## 2026-11-06 · Local server reads an execution with no credential
+
+**Ran:** during the smoke test above, the same `GET /durable-functions/send-outbound/executions/<id>` with no `Authorization` header, against `localhost:8000`.
+**Got:** 200 with the execution. With the anon key alone: 403 "anon keys can only reach executions of public durable functions", as documented.
+**Why it matters:** probably the local server's "everything is the local user" convenience, but it means a local run cannot prove the browser's token is accepted. Worth one line in the local guide, and worth confirming the cloud API answers 401 there.
