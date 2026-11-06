@@ -6,6 +6,8 @@ An agent drafts an outbound email. A durable function holds it, with no compute 
 
 A visitor to the Agent inbox page signs in anonymously and asks to send a draft email that contains a dollar amount. The `send-outbound` durable function saves the draft, calls `ctx.waitForApproval`, and suspends. The request appears in the project's Approvals page and in `volcano cloud durable approvals list`. A person approves or denies it. The execution resumes on the next line with the decision and either sends the email or archives the draft. The page polls the execution and shows the result, including who decided and their comment.
 
+![Agent inbox before any request](screenshots/00-live-idle.png)
+
 ![Approval pending in the dashboard](screenshots/01-pending.png)
 
 ![Page after approval, sent by a named person](screenshots/04-live-sent.png)
