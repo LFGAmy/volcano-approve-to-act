@@ -4,3 +4,5 @@ node_modules/
 .volcano/project.json
 .next/
 *.tsbuildinfo
+*.mov
+*.mp4
