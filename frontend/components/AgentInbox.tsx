@@ -7,6 +7,7 @@ import { readExecution, type Execution, type SendOutboundResult } from '@/lib/ex
 const FUNCTION_NAME = 'send-outbound';
 const POLL_MS = 3000;
 const TERMINAL = new Set<Execution['status']>(['succeeded', 'failed', 'timed_out', 'stopped', 'unknown']);
+const STORAGE_KEY = 'agent-inbox:execution';
 
 const DRAFT = {
   to: 'jordan@example.com',
@@ -16,7 +17,45 @@ const DRAFT = {
   policy: 'External email with a dollar amount needs a human yes.',
 };
 
-type Started = { id: string; name: string; clientToken?: string };
+type Started = { id: string; name: string; clientToken?: string; startedAt?: number };
+
+// The in-flight execution survives a reload so polling resumes. localStorage
+// can be missing or throw (private windows, blocked storage), so every access
+// is guarded and a failure just means nothing is remembered.
+function readStoredExecution(): Started | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const { id, name, clientToken, startedAt } = parsed as Record<string, unknown>;
+    if (typeof id !== 'string' || typeof name !== 'string') return null;
+    return {
+      id,
+      name,
+      clientToken: typeof clientToken === 'string' ? clientToken : undefined,
+      startedAt: typeof startedAt === 'number' ? startedAt : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredExecution(started: Started): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(started));
+  } catch {
+    // Nothing to do: the page still works, it just will not resume after a reload.
+  }
+}
+
+function clearStoredExecution(): void {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Same as above.
+  }
+}
 
 export default function AgentInbox() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -30,6 +69,7 @@ export default function AgentInbox() {
   const [readNote, setReadNote] = useState<string | null>(null);
 
   // On load: restore a session if one exists, otherwise sign in anonymously.
+  // Once signed in, resume any execution a previous page load started.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -38,15 +78,17 @@ export default function AgentInbox() {
       if (cancelled) return;
       if (restored.user) {
         setUserId(restored.user.id);
-        return;
+      } else {
+        const { user, error } = await volcano.auth.signInAnonymously();
+        if (cancelled) return;
+        if (error || !user) {
+          setAuthError(error?.message ?? 'Anonymous sign-in returned no user.');
+          return;
+        }
+        setUserId(user.id);
       }
-      const { user, error } = await volcano.auth.signInAnonymously();
-      if (cancelled) return;
-      if (error || !user) {
-        setAuthError(error?.message ?? 'Anonymous sign-in returned no user.');
-        return;
-      }
-      setUserId(user.id);
+      const remembered = readStoredExecution();
+      if (remembered && !cancelled) setStarted(remembered);
     })().catch((cause: unknown) => {
       if (!cancelled) setAuthError(cause instanceof Error ? cause.message : String(cause));
     });
@@ -66,6 +108,7 @@ export default function AgentInbox() {
       const read = await readExecution(getVolcano(), FUNCTION_NAME, started.id, started.clientToken);
       if (cancelled) return;
       if (read.error || !read.data) {
+        if (read.error?.status === 404) clearStoredExecution();
         const seconds =
           read.error?.retryAfter && read.error.retryAfter > 0 ? read.error.retryAfter : POLL_MS / 1000;
         setReadNote(`${read.error?.message ?? 'The read returned nothing'}. Retrying in ${seconds}s.`);
@@ -86,6 +129,9 @@ export default function AgentInbox() {
 
   const requestSend = useCallback(async () => {
     if (starting) return;
+    // The button is only enabled once the previous execution is terminal (or
+    // there is none), so a click here is the moment to forget the old one.
+    clearStoredExecution();
     setStarting(true);
     setStartError(null);
     setExecution(null);
@@ -100,7 +146,9 @@ export default function AgentInbox() {
       setStartError(error?.message ?? `The start was refused with HTTP ${status ?? 'none'}.`);
       return;
     }
-    setStarted({ id: data.id, name: data.name, clientToken: data.client_token });
+    const next: Started = { id: data.id, name: data.name, clientToken: data.client_token, startedAt: Date.now() };
+    writeStoredExecution(next);
+    setStarted(next);
   }, [starting]);
 
   const inFlight = starting || (started !== null && (execution === null || !TERMINAL.has(execution.status)));

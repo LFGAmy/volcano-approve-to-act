@@ -167,6 +167,6 @@ Live URL on Volcano frontends. Anonymous visitor signs in, starts `send-outbound
 **Our bug, not theirs:** the page keeps the execution id and client token in memory only, so a reload forgets it and shows "No request yet" while the execution keeps running. Cost ~10 min of chasing a phantom reset before noticing it was a manual reload. Fix: persist id + client_token in localStorage and resume polling on load.
 **Observation:** Volcano serves frontends with a Content Security Policy that blocks `eval`; DevTools shows one CSP issue on load. Nothing broke, but a library that needs `eval` would. Worth a line on the frontends page.
 
-## Still to check (tomorrow)
-- Cloud: does `GET /durable-functions/send-outbound/executions/<id>` with NO Authorization header answer 200 like the local server did? If yes, that is a security finding and goes to them privately first, not in the public write-up.
+## 2026-11-06 · Cloud vs local: unauthenticated execution read
+Cloud `GET https://api.volcano.dev/durable-functions/send-outbound/executions/<id>` with no Authorization header: **401**. Local server (`volcano start`, `localhost:8000`): **200** with the execution body. So the cloud is correct and the local server relaxes auth. Not a security issue, but a first-timer cannot use the local server to prove their browser's token path works, and a page that "works locally" can fail in the cloud for auth reasons. One sentence in the local-development guide would cover it.
 
