@@ -13,7 +13,7 @@ A cookbook recipe for [Volcano](https://volcano.dev): an agent drafts an outboun
 3. A person approves or denies from the CLI (`volcano cloud durable approvals approve <id> --yes`) or the dashboard. Only a signed-in person can decide; the agent cannot approve its own request.
 4. The function resumes with the decision and sends or archives. The page polls and shows the result, including who decided.
 
-![Sent, with who approved it](screenshots/04-live-sent.png)
+<img src="screenshots/04-live-sent.png" width="640" alt="Sent, with who approved it">
 
 - [RECIPE.md](RECIPE.md): the cookbook entry, in the format of the recipes at docs.volcano.dev/cookbooks.
 - [FEEDBACK.md](FEEDBACK.md): everything that tripped me up as a first-time Volcano user, logged as it happened, with what would have fixed it.
