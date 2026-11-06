@@ -2,3 +2,5 @@ version: 1
 functions:
   - name: orders
     kind: durable
+  - name: send-outbound
+    kind: durable

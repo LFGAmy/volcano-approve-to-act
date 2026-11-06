@@ -78,3 +78,17 @@ One entry per rough edge: what I ran, what I expected, what happened, time lost,
 **Time lost:** ~6 min.
 **Would have fixed it:** (1) `executions get` should print the runtime error when the failure is an import error, or at least "run `volcano durable logs <fn> --type runtime`"; (2) the local guide needs `npm init -y && npm install @volcano.dev/sdk` inside the function directory, with a note that the archive only packs the function folder; (3) `volcano init` could scaffold one function with a package.json already in place.
 
+**Resolution:** with `package.json` + `@volcano.dev/sdk` in the function folder, redeploy archived 2.7KB (package.json only, no node_modules) and the execution succeeded in 1s: `{"charged":"ch_1"}`. So the local build installs from package.json. Worth one sentence in the guide: "the archive packs your function folder; dependencies are installed from its package.json at build time."
+
+## 2026-11-06 · Milestone: first durable function succeeded locally
+Charge step, 24h wait (instant locally), receipt step, result returned. Time from `volcano start` to green: ~25 min including four config/dependency fixes that the docs could have prevented.
+
+## 2026-11-06 · `volcano connect` created a nested project folder
+
+**Ran:** `volcano connect --device-code …` from the repo root (the website's setup prompt), then later `volcano init` at the root.
+**Got:** `connect` created a subfolder named after the auto-named project (`villarrica-coral-43/`) holding `.volcano/project.json` (the project link), `AGENTS.md`, and `volcano/cloud.env` with the cloud keys. `init` at the root made a second scaffold. I only noticed when `git commit` listed 16 files including the nested ones.
+**Why it matters:** the project link and the cloud keys live one folder down from where I am working, so cloud commands from the root would not be linked, and a first-timer has two `volcano/` folders and no idea which is real. `connect` printed its output inside a backtick-mangled line (see above), so I never saw where it put things.
+**Good:** `AGENTS.md` is a nice touch: tells coding agents to read the volcano-platform and volcano-sdk skills and where the keys live. The nested `.gitignore` correctly ignores the project link and `*.env`.
+**Time lost:** ~5 min.
+**Would have fixed it:** `connect` run inside an existing directory should ask "link this directory or create a subfolder?" (the help text says "link a directory"), and print the resulting path on its own line. Moved `.volcano/`, `AGENTS.md` and `volcano/cloud.env` to the root; deleted the subfolder.
+
