@@ -1,0 +1,3 @@
+# Volcano: this checkout's project link, and env files that hold keys
+.volcano/project.json
+volcano/*.env
