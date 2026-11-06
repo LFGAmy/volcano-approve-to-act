@@ -151,3 +151,22 @@ Install to cloud-approved: ~2h 05m wall clock, including dashboard screenshots a
 **Ran:** during the smoke test above, the same `GET /durable-functions/send-outbound/executions/<id>` with no `Authorization` header, against `localhost:8000`.
 **Got:** 200 with the execution. With the anon key alone: 403 "anon keys can only reach executions of public durable functions", as documented.
 **Why it matters:** probably the local server's "everything is the local user" convenience, but it means a local run cannot prove the browser's token is accepted. Worth one line in the local guide, and worth confirming the cloud API answers 401 there.
+
+## 2026-11-06 · Milestone: browser to approval to browser (local)
+Agent inbox page (Next.js dev server) signed in anonymously, started `send-outbound` from the browser with `durable.start`, polled with the documented REST read (SDK method missing, see above), showed "running / waiting for a person", and flipped to "sent" with by + comment within 3s of `volcano durable approvals approve` in the terminal. Execution named `draft-<timestamp>` by the page, which also fixes the UUID-name readability issue noted earlier.
+**Good:** CORS preflight for the execution read already allows `X-Volcano-Client-Token` and exposes `Retry-After`, so the browser poll works without any project CORS config.
+
+## 2026-11-06 · `volcano cloud deploy` (one command, whole project)
+
+**Good:** one command ran the six steps in order (variables, migrations skipped, functions, durable, frontend, config), printed a plan first, waited for the three builds, and printed the frontend URL. 5m10s end to end, 16KB frontend archive. This is the "deploy in one step" story and it works. The config step correctly applied anonymous sign-in and the frontend's scoped variables after the frontend existed.
+**Small:** the frontend's URL is a bare UUID subdomain. Fine, but `volcano cloud frontends get agent-inbox` is the only way to find it again; printing it in `volcano cloud frontends list` too would help.
+
+
+## 2026-11-06 · Milestone: live on Volcano, end to end
+Live URL on Volcano frontends. Anonymous visitor signs in, starts `send-outbound` from the browser, page polls, person approves from the CLI as collab@lfgamy.com, page shows "sent" with by + comment within 3s. No reload. Execution d3f2fd45, 21:18:43 to 21:19:36.
+**Our bug, not theirs:** the page keeps the execution id and client token in memory only, so a reload forgets it and shows "No request yet" while the execution keeps running. Cost ~10 min of chasing a phantom reset before noticing it was a manual reload. Fix: persist id + client_token in localStorage and resume polling on load.
+**Observation:** Volcano serves frontends with a Content Security Policy that blocks `eval`; DevTools shows one CSP issue on load. Nothing broke, but a library that needs `eval` would. Worth a line on the frontends page.
+
+## Still to check (tomorrow)
+- Cloud: does `GET /durable-functions/send-outbound/executions/<id>` with NO Authorization header answer 200 like the local server did? If yes, that is a security finding and goes to them privately first, not in the public write-up.
+
