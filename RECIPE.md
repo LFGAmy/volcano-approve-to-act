@@ -1,6 +1,6 @@
 # Approve to act
 
-An agent drafts an outbound email. A durable function holds it, with no compute running, until a person approves or denies it from the CLI or the dashboard. Then it sends or archives. One durable function, one Next.js page, one tested coding-agent prompt.
+An agent drafts an outbound email. A durable function holds it, with no compute running, until a person approves or denies it from the CLI or the dashboard. Then it sends or archives. One durable function, one Next.js page, one coding-agent prompt.
 
 ## What it does
 
